@@ -2,6 +2,14 @@
 
 `metrax` is an official JAX metrics library.
 
+## Installation
+
+Install the package by installing the PyPi release.
+
+```
+pip install google-metrax
+```
+
 ## Development
 
 Develop the docs locally:
