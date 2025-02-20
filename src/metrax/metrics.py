@@ -165,6 +165,15 @@ class RSQUARED(clu_metrics.Metric):
   count: jax.Array
   sum_of_squared_error: jax.Array
   sum_of_squared_label: jax.Array
+  
+
+  @classmethod
+  def empty(cls) -> 'RSQUARED':
+    return cls(
+      total=jnp.array(0, jnp.float32),
+      count=jnp.array(0, jnp.float32),
+      sum_of_squared_error=jnp.array(0, jnp.float32),
+      sum_of_squared_label=jnp.array(0, jnp.float32))
 
   @classmethod
   def from_model_output(
@@ -260,6 +269,12 @@ class Precision(clu_metrics.Metric):
   false_positives: jax.Array
 
   @classmethod
+  def empty(cls) -> 'Precision':
+    return cls(
+      true_positives=jnp.array(0, jnp.float32),
+      false_positives=jnp.array(0, jnp.float32))
+
+  @classmethod
   def from_model_output(
       cls,
       predictions: jax.Array,
@@ -325,6 +340,12 @@ class Recall(clu_metrics.Metric):
 
   true_positives: jax.Array
   false_negatives: jax.Array
+
+  @classmethod
+  def empty(cls) -> 'Recall':
+    return cls(
+      true_positives=jnp.array(0, jnp.float32),
+      false_negatives=jnp.array(0, jnp.float32))
 
   @classmethod
   def from_model_output(
@@ -415,6 +436,14 @@ class AUCPR(clu_metrics.Metric):
   false_positives: jax.Array
   false_negatives: jax.Array
   num_thresholds: int
+  
+  @classmethod
+  def empty(cls) -> 'AUCPR':
+    return cls(
+      true_positives=jnp.array(0, jnp.float32),
+      false_positives=jnp.array(0, jnp.float32),
+      false_negatives=jnp.array(0, jnp.float32),
+      num_thresholds=0)
 
   @classmethod
   def from_model_output(
@@ -590,6 +619,15 @@ class AUCROC(clu_metrics.Metric):
   num_thresholds: int
 
   @classmethod
+  def empty(cls) -> 'AUCROC':
+    return cls(
+      true_positives=jnp.array(0, jnp.float32),
+      true_negatives=jnp.array(0, jnp.float32),
+      false_positives=jnp.array(0, jnp.float32),
+      false_negatives=jnp.array(0, jnp.float32),
+      num_thresholds=0)
+
+  @classmethod
   def from_model_output(
       cls,
       predictions: jax.Array,
@@ -697,6 +735,12 @@ class Perplexity(clu_metrics.Metric):
 
   aggregate_crossentropy: jax.Array
   num_samples: jax.Array
+
+  @classmethod
+  def empty(cls) -> 'Perplexity':
+    return cls(
+      aggregate_crossentropy=jnp.array(0, jnp.float32),
+      num_samples=jnp.array(0, jnp.float32))
 
   @classmethod
   def from_model_output(
