@@ -50,7 +50,7 @@ def _divide_no_nan(x: jax.Array, y: jax.Array) -> jax.Array:
 @flax.struct.dataclass
 class MSE(clu_metrics.Average):
   r"""Computes the mean squared error for regression problems given `predictions` and `labels`.
-  
+
   The mean squared error without sample weights is defined as:
 
   .. math::
@@ -107,7 +107,7 @@ class RMSE(MSE):
   r"""Computes the root mean squared error for regression problems given `predictions` and `labels`.
 
   The root mean squared error without sample weights is defined as:
-  
+
   .. math::
       RMSE = \sqrt{\frac{1}{N} \sum_{i=1}^{N} (y_i - \hat{y}_i)^2}
 
@@ -165,6 +165,15 @@ class RSQUARED(clu_metrics.Metric):
   count: jax.Array
   sum_of_squared_error: jax.Array
   sum_of_squared_label: jax.Array
+  
+
+  @classmethod
+  def empty(cls) -> 'RSQUARED':
+    return cls(
+      total=jnp.array(0, jnp.float32),
+      count=jnp.array(0, jnp.float32),
+      sum_of_squared_error=jnp.array(0, jnp.float32),
+      sum_of_squared_label=jnp.array(0, jnp.float32))
 
   @classmethod
   def from_model_output(
@@ -260,6 +269,12 @@ class Precision(clu_metrics.Metric):
   false_positives: jax.Array
 
   @classmethod
+  def empty(cls) -> 'Precision':
+    return cls(
+      true_positives=jnp.array(0, jnp.float32),
+      false_positives=jnp.array(0, jnp.float32))
+
+  @classmethod
   def from_model_output(
       cls,
       predictions: jax.Array,
@@ -327,6 +342,12 @@ class Recall(clu_metrics.Metric):
   false_negatives: jax.Array
 
   @classmethod
+  def empty(cls) -> 'Recall':
+    return cls(
+      true_positives=jnp.array(0, jnp.float32),
+      false_negatives=jnp.array(0, jnp.float32))
+
+  @classmethod
   def from_model_output(
       cls, predictions: jax.Array, labels: jax.Array, threshold: float = 0.5
   ) -> 'Recall':
@@ -370,14 +391,14 @@ class AUCPR(clu_metrics.Metric):
 
   The Precision-Recall curve shows the tradeoff between precision and recall at different
   classification thresholds. The area under this curve (AUC-PR) provides a single score
-  that represents the model's ability to distinguish between classes across all possible
-  thresholds.
+  that represents the model's ability to identify positive cases across
+  all possible classification thresholds, particularly in imbalanced datasets.
 
   For each threshold :math:`t`, precision and recall are calculated as:
 
   .. math::
     Precision(t) = \frac{TP(t)}{TP(t) + FP(t)}
-    
+
     Recall(t) = \frac{TP(t)}{TP(t) + FN(t)}
 
   The AUC-PR is then computed using interpolation:
@@ -415,6 +436,14 @@ class AUCPR(clu_metrics.Metric):
   false_positives: jax.Array
   false_negatives: jax.Array
   num_thresholds: int
+  
+  @classmethod
+  def empty(cls) -> 'AUCPR':
+    return cls(
+      true_positives=jnp.array(0, jnp.float32),
+      false_positives=jnp.array(0, jnp.float32),
+      false_negatives=jnp.array(0, jnp.float32),
+      num_thresholds=0)
 
   @classmethod
   def from_model_output(
@@ -556,14 +585,15 @@ class AUCROC(clu_metrics.Metric):
 
   The ROC curve shows the tradeoff between the true positive rate (TPR) and false positive
   rate (FPR) at different classification thresholds. The area under this curve (AUC-ROC)
-  provides a single score that represents the model's ability to distinguish between classes
-  across all possible thresholds.
+  provides a single score that represents the model's ability to discriminate between
+  positive and negative cases across all possible classification thresholds,
+  regardless of class imbalance.
 
   For each threshold :math:`t`, TPR and FPR are calculated as:
 
   .. math::
       TPR(t) = \frac{TP(t)}{TP(t) + FN(t)}
-      
+
       FPR(t) = \frac{FP(t)}{FP(t) + TN(t)}
 
   The AUC-ROC is then computed using the trapezoidal rule:
@@ -587,6 +617,15 @@ class AUCROC(clu_metrics.Metric):
   false_positives: jax.Array
   false_negatives: jax.Array
   num_thresholds: int
+
+  @classmethod
+  def empty(cls) -> 'AUCROC':
+    return cls(
+      true_positives=jnp.array(0, jnp.float32),
+      true_negatives=jnp.array(0, jnp.float32),
+      false_positives=jnp.array(0, jnp.float32),
+      false_negatives=jnp.array(0, jnp.float32),
+      num_thresholds=0)
 
   @classmethod
   def from_model_output(
@@ -696,6 +735,12 @@ class Perplexity(clu_metrics.Metric):
 
   aggregate_crossentropy: jax.Array
   num_samples: jax.Array
+
+  @classmethod
+  def empty(cls) -> 'Perplexity':
+    return cls(
+      aggregate_crossentropy=jnp.array(0, jnp.float32),
+      num_samples=jnp.array(0, jnp.float32))
 
   @classmethod
   def from_model_output(
