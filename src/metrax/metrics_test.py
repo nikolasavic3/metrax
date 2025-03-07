@@ -320,6 +320,148 @@ class MetricsTest(parameterized.TestCase):
         atol=1e-05,
     )
 
+  @parameterized.named_parameters(
+      (
+          'basic',
+          np.random.randint(10, size=[2, 5, 10]),
+          np.random.uniform(size=(2, 5, 10, 20)),
+          None,
+      ),
+      (
+          'weighted',
+          np.random.randint(10, size=[2, 5, 10]),
+          np.random.uniform(size=(2, 5, 10, 20)),
+          np.random.randint(2, size=(2, 5, 10)).astype(np.float32),
+      ),
+  )
+  def test_perplexity(self, y_true, y_pred, sample_weights):
+    keras_metric = keras_hub.metrics.Perplexity()
+    metrax_metric = None
+    for index, (labels, logits) in enumerate(zip(y_true, y_pred)):
+      weights = sample_weights[index] if sample_weights is not None else None
+      keras_metric.update_state(labels, logits, sample_weight=weights)
+      update = metrax.Perplexity.from_model_output(
+          predictions=logits,
+          labels=labels,
+          sample_weights=weights,
+      )
+      metrax_metric = update if metrax_metric is None else metrax_metric.merge(
+          update
+      )
+
+    expected = keras_metric.result()
+    np.testing.assert_allclose(
+        metrax_metric.compute(),
+        expected,
+        rtol=1e-05,
+        atol=1e-05,
+    )
+
+  def test_wer_empty(self):
+    """Tests the `empty` method of the `WER` class."""
+    m = metrax.WER.empty()
+    self.assertEqual(m.total_edit_distance, jnp.array(0, jnp.float32))
+    self.assertEqual(m.total_reference_length, jnp.array(0, jnp.float32))
+
+  def test_wer(self):
+    """Tests that WER metric computes correct values."""
+    # Test with string inputs
+    predictions = [
+        "the cat sat on the mat",
+        "a quick brown fox jumps over the lazy dog",
+        "hello world"
+    ]
+    references = [
+        "the cat sat on the hat",  # 1 substitution (mat->hat), 6 total words
+        "the quick brown fox jumps over the lazy dog",  # 1 substitution (a->the), 9 total words
+        "hello beautiful world"  # 1 insertion (beautiful), 3 total words
+    ]
+
+    # Expected individual WERs: 1/6, 1/9, 1/3
+    # Total edit distance: 1 + 1 + 1 = 3
+    # Total reference length: 6 + 9 + 3 = 18
+    # Expected WER: 3/18 = 0.1667
+
+    metric = None
+    for pred, ref in zip(predictions, references):
+      update = metrax.WER.from_model_output(
+          predictions=[pred],
+          references=[ref],
+      )
+      metric = update if metric is None else metric.merge(update)
+
+    np.testing.assert_allclose(
+        metric.compute(),
+        jnp.array(3/18, dtype=jnp.float32),
+        rtol=1e-05,
+        atol=1e-05,
+    )
+
+  def test_wer_with_tokens(self):
+    """Tests that WER metric computes correct values with tokenized inputs."""
+    # Test with token inputs (lists instead of strings)
+    tokenized_preds = [
+        ["the", "cat", "sat", "on", "the", "mat"],
+        ["a", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog"],
+        ["hello", "world"]
+    ]
+    tokenized_refs = [
+        ["the", "cat", "sat", "on", "the", "hat"],
+        ["the", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog"],
+        ["hello", "beautiful", "world"]
+    ]
+
+    metric = None
+    for pred, ref in zip(tokenized_preds, tokenized_refs):
+      update = metrax.WER.from_model_output(
+          predictions=[pred],
+          references=[ref],
+      )
+      metric = update if metric is None else metric.merge(update)
+
+    np.testing.assert_allclose(
+        metric.compute(),
+        jnp.array(3/18, dtype=jnp.float32),
+        rtol=1e-05,
+        atol=1e-05,
+    )
+
+  def test_wer_merge(self):
+    """Tests the merge functionality of the WER metric."""
+    predictions1 = ["the cat sat on the mat"]
+    references1 = ["the cat sat on the hat"]  # 1/6 WER
+
+    predictions2 = [
+        "a quick brown fox jumps over the lazy dog",
+        "hello world"
+    ]
+    references2 = [
+        "the quick brown fox jumps over the lazy dog",
+        "hello beautiful world"
+    ]  # (1+1)/(9+3) = 2/12 WER
+
+    # Create and compute first metric
+    metric1 = metrax.WER.from_model_output(
+        predictions=predictions1,
+        references=references1,
+    )
+
+    # Create and compute second metric
+    metric2 = metrax.WER.from_model_output(
+        predictions=predictions2,
+        references=references2,
+    )
+
+    # Merge and compute
+    merged_metric = metric1.merge(metric2)
+
+    np.testing.assert_allclose(
+        merged_metric.compute(),
+        jnp.array(3/18, dtype=jnp.float32),
+        rtol=1e-05,
+        atol=1e-05,
+    )
+
 
 if __name__ == '__main__':
   absltest.main()

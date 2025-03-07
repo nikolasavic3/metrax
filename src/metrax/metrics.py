@@ -537,3 +537,140 @@ class AUCROC(clu_metrics.Metric):
     )
     # Threshold goes from 0 to 1, so trapezoid is negative.
     return jnp.trapezoid(tp_rate, fp_rate) * -1
+
+
+@flax.struct.dataclass
+class WER(clu_metrics.Metric):
+  r"""Computes Word Error Rate (WER) for speech recognition or text generation tasks.
+
+  Word Error Rate measures the edit distance between reference texts and predictions,
+  normalized by the length of the reference texts. It is calculated as:
+
+  .. math::
+      WER = \frac{S + D + I}{N}
+
+  where:
+      - S is the number of substitutions
+      - D is the number of deletions
+      - I is the number of insertions
+      - N is the number of words in the reference
+
+  A lower WER indicates better performance, with 0 being perfect.
+
+  Attributes:
+      total_edit_distance: Sum of edit distances across all samples.
+      total_reference_length: Sum of reference lengths across all samples.
+  """
+
+  total_edit_distance: jax.Array
+  total_reference_length: jax.Array
+
+  @classmethod
+  def empty(cls) -> 'WER':
+    return cls(
+        total_edit_distance=jnp.array(0, jnp.float32),
+        total_reference_length=jnp.array(0, jnp.float32))
+
+  @classmethod
+  def from_model_output(
+      cls,
+      predictions: list[str] | list[list],
+      references: list[str] | list[list],
+  ) -> 'WER':
+    """Updates the metric.
+
+    Args:
+        predictions: A list of predicted texts/transcriptions or tokenized sequences.
+        references: A list of reference texts/transcriptions or tokenized sequences.
+
+    Returns:
+        Updated WER metric.
+
+    Raises:
+        ValueError: If inputs are not properly formatted or are empty.
+    """
+    if not predictions or not references:
+      raise ValueError('predictions and references must not be empty')
+
+    if len(predictions) != len(references):
+      raise ValueError(
+          f'Length mismatch: predictions has {len(predictions)} items, '
+          f'but references has {len(references)} items'
+      )
+
+    # Determine if inputs are strings that need tokenization or already tokenized
+    total_edit_distance = 0
+    total_reference_length = 0
+
+    for pred, ref in zip(predictions, references):
+      # Convert to tokens if needed
+      pred_tokens = pred.split() if isinstance(pred, str) else pred
+      ref_tokens = ref.split() if isinstance(ref, str) else ref
+
+      # Calculate edit distance
+      edit_distance = cls._levenshtein_distance(pred_tokens, ref_tokens)
+
+      # Update totals
+      total_edit_distance += edit_distance
+      total_reference_length += len(ref_tokens)
+
+    return cls(
+        total_edit_distance=jnp.array(total_edit_distance, dtype=jnp.float32),
+        total_reference_length=jnp.array(total_reference_length, dtype=jnp.float32),
+    )
+
+  @staticmethod
+  def _levenshtein_distance(prediction: list, reference: list) -> int:
+    """Computes the Levenshtein (edit) distance between two token sequences.
+
+    Args:
+        prediction: List of tokens in the predicted sequence.
+        reference: List of tokens in the reference sequence.
+
+    Returns:
+        The minimum number of edits needed to transform prediction into reference.
+    """
+    # Create a matrix to store the edit distances
+    m, n = len(prediction), len(reference)
+
+    # Handle edge cases
+    if m == 0:
+      return n
+    if n == 0:
+      return m
+
+    # Create distance matrix
+    distance_matrix = [[0 for _ in range(n+1)] for _ in range(m+1)]
+
+    # Initialize first row and column
+    for i in range(m+1):
+      distance_matrix[i][0] = i
+    for j in range(n+1):
+      distance_matrix[0][j] = j
+
+    # Fill the matrix
+    for i in range(1, m+1):
+      for j in range(1, n+1):
+        if prediction[i-1] == reference[j-1]:
+          cost = 0
+        else:
+          cost = 1
+
+        distance_matrix[i][j] = min(
+            distance_matrix[i-1][j] + 1,      # deletion
+            distance_matrix[i][j-1] + 1,      # insertion
+            distance_matrix[i-1][j-1] + cost  # substitution
+        )
+
+    return distance_matrix[m][n]
+
+  def merge(self, other: 'WER') -> 'WER':
+    return type(self)(
+        total_edit_distance=self.total_edit_distance + other.total_edit_distance,
+        total_reference_length=self.total_reference_length + other.total_reference_length,
+    )
+
+  def compute(self) -> jax.Array:
+    return _divide_no_nan(
+        self.total_edit_distance, self.total_reference_length
+    )

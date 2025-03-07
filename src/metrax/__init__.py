@@ -20,6 +20,7 @@ from metrax.metrics import (
     RMSE,
     RSQUARED,
     Recall,
+    WER,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "Recall",
     "AUCPR",
     "AUCROC",
+    "WER",
 ]
