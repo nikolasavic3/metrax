@@ -12,15 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from metrax.metrics import (
+from metrax.classification_metrics import (
     AUCPR,
     AUCROC,
-    MSE,
-    Perplexity,
     Precision,
+    Recall,
+)
+from metrax.nlp_metrics import (
+    Perplexity,
+)
+from metrax.regression_metrics import (
+    MSE,
     RMSE,
     RSQUARED,
-    Recall,
 )
 
 __all__ = [
