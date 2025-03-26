@@ -40,3 +40,16 @@ pip install -r ./docs/requirements.txt
 sphinx-build ./docs /tmp/metrax_docs
 python -m http.server --directory /tmp/metrax_docs
 ```
+
+## Citing Metrax
+
+To cite Metrax please use the citation:
+
+```bibtex
+@software{metrax2024,
+  title={Metrax},
+  author={Jiwon Shin, Jeff Carpenter, et al.},
+  year={2024},
+  howpublished={\url{https://github.com/google/metrax}},
+}
+```
