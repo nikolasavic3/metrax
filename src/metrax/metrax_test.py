@@ -85,6 +85,15 @@ class MetraxTest(parameterized.TestCase):
           {'predictions': OUTPUT_LABELS, 'labels': OUTPUT_PREDS},
       ),
       (
+          'precisionAtK',
+          metrax.PrecisionAtK,
+          {
+              'predictions': OUTPUT_LABELS,
+              'labels': OUTPUT_PREDS,
+              'ks': np.array([3]),
+          },
+      ),
+      (
           'rmse',
           metrax.RMSE,
           {'predictions': OUTPUT_LABELS, 'labels': OUTPUT_PREDS},
