@@ -50,6 +50,15 @@ MAP_FROM_KERAS = np.array([
 MAP_FROM_KERAS_VS1 = np.array([0.75, 0.75, 0.75, 0.75, 0.75, 0.75])
 P_FROM_KERAS = np.array([0.75, 0.875, 0.58333337306976320, 0.5625, 0.5, 0.5])
 P_FROM_KERAS_VS1 = np.array([0.75, 0.75, 0.75, 0.75, 0.75, 0.75])
+R_FROM_KERAS = np.array([
+    0.2083333432674408,
+    0.5416666865348816,
+    0.5416666865348816,
+    0.625,
+    0.6666666865348816,
+    0.75,
+])
+R_FROM_KERAS_VS1 = np.array([0.75, 0.75, 0.75, 0.75, 0.75, 0.75])
 
 
 class RankingMetricsTest(parameterized.TestCase):
@@ -104,6 +113,31 @@ class RankingMetricsTest(parameterized.TestCase):
     """Test that `PrecisionAtK` Metric computes correct values."""
     ks = jnp.array([1, 2, 3, 4, 5, 6])
     metric = metrax.PrecisionAtK.from_model_output(
+        predictions=y_pred,
+        labels=y_true,
+        ks=ks,
+    )
+
+    np.testing.assert_allclose(
+        metric.compute(),
+        map_from_keras,
+        rtol=1e-05,
+        atol=1e-05,
+    )
+
+  @parameterized.named_parameters(
+      ('basic', OUTPUT_LABELS, OUTPUT_PREDS, R_FROM_KERAS),
+      (
+          'vocab_size_one',
+          OUTPUT_LABELS_VS1,
+          OUTPUT_PREDS_VS1,
+          R_FROM_KERAS_VS1,
+      ),
+  )
+  def test_recallatk(self, y_true, y_pred, map_from_keras):
+    """Test that `RecallAtK` Metric computes correct values."""
+    ks = jnp.array([1, 2, 3, 4, 5, 6])
+    metric = metrax.RecallAtK.from_model_output(
         predictions=y_pred,
         labels=y_true,
         ks=ks,
