@@ -66,10 +66,10 @@ class DCGAtK(base.Average):
         representing prediction scores. Higher scores mean higher rank.
       labels: A 2D array (batch_size, vocab_size) of graded relevance scores.
       ks: A 1D array of integers representing the k values for which DCG is
-        computed (e.g., jnp.array([1, 5, 10])). Shape: (num_ks,).
+        computed (e.g., jnp.array([1, 5, 10])). Shape: (|ks|,).
 
     Returns:
-      A 2D array (batch_size, num_ks) containing DCG@k values.
+      A 2D array (batch_size, |ks|) containing DCG@k values.
     """
     gains = jnp.power(2.0, labels.astype(jnp.float32)) - 1.0
     score_ranks = jnp.argsort(jnp.argsort(-predictions, axis=1), axis=1) + 1
@@ -271,6 +271,102 @@ class AveragePrecisionAtK(base.Average):
     return cls(
         total=ap_at_ks.sum(axis=0),
         count=num_examples,
+    )
+
+
+@flax.struct.dataclass
+class MRR(base.Average):
+  r"""Computes Mean Reciprocal Rank (MRR), supporting MRR@k for multiple k values.
+
+  MRR is the average of the reciprocal ranks of the first relevant item
+  for a set of queries.
+
+  The mean reciprocal rank for a group of queries :math:`q` in :math:`Q` is defined as follows:
+
+  .. math::
+      MRR = \frac{1}{|Q|} \sum_{q \in Q} RR_q
+
+  Where :math:`RR_q` is the reciprocal rank for query :math:`q`, defined as:
+
+  .. math::
+      RR_q =
+        \begin{cases}
+          \frac{1}{\text{rank}} & \text{if a revelant item is found} \\
+          0 & \text{if no relevant item is found.}
+        \end{cases}
+
+  This implementation assumes binary relevance labels (1 for relevant, 0 for not
+  relevant).
+  """
+
+  @classmethod
+  def _calculate_rr_at_ks(
+      cls,
+      predictions: jax.Array,
+      labels: jax.Array,
+      ks: jax.Array,
+  ) -> jax.Array:
+    """Calculates the Reciprocal Rank@k for each query in a batch, for each k.
+
+    Args:
+      predictions: A 2D array of prediction scores. Higher scores indicate
+        higher rank. The shape should be (batch_size, vocab_size).
+      labels: A 2D array of binary relevance labels (0 or 1). The shape should
+        be (batch_size, vocab_size).
+      ks: A 1D array of integers representing the k cutoffs. The shape should be
+        (|ks|,).
+
+    Returns:
+      A 2D array containing the Reciprocal Rank@k for each query and each k.
+      Shape: (batch_size, |ks|).
+    """
+    indices_by_rank = jnp.argsort(-predictions, axis=1)
+    labels_by_rank = jnp.take_along_axis(labels, indices_by_rank, axis=1)
+    first_relevant_indices = jnp.argmax(labels_by_rank, axis=1)
+    first_relevant_ranks = first_relevant_indices + 1
+    # Check if a relevant item exists for each query.
+    reciprocal_rank = jnp.where(
+        jnp.any(labels_by_rank > 0, axis=1),
+        1.0 / first_relevant_ranks.astype(jnp.float32),
+        0.0,
+    )
+
+    def _compute_rr_at_k(k, reciprocal_rank, first_relevant_rank):
+      rr_at_k = jnp.where(first_relevant_rank <= k, reciprocal_rank, 0.0)
+      return rr_at_k
+
+    rr_at_ks = jax.vmap(_compute_rr_at_k, in_axes=(0, None, None), out_axes=1)(
+        ks, reciprocal_rank, first_relevant_ranks
+    )
+
+    return rr_at_ks
+
+  @classmethod
+  def from_model_output(
+      cls,
+      predictions: jax.Array,
+      labels: jax.Array,
+      ks: jax.Array,
+  ) -> 'MRR':
+    """Creates an MRR metric instance from model output, calculating MRR@k for each k.
+
+    Args:
+      predictions: A 2D array of prediction scores. Higher scores indicate
+        higher rank. The shape should be (batch_size, vocab_size).
+      labels: A 2D array of binary relevance labels (0 or 1). The shape should
+        be (batch_size, vocab_size).
+      ks: A 1D array of integers representing the k cutoffs. The shape should be
+        (|ks|, ).
+
+    Returns:
+      An MRR metric object. The 'total' field will be an array of shape
+      (|ks|, ).
+    """
+    rr_at_ks = cls._calculate_rr_at_ks(predictions, labels, ks)
+    num_queries = jnp.array(labels.shape[0], dtype=jnp.float32)
+    return cls(
+        total=rr_at_ks.sum(axis=0),
+        count=num_queries,
     )
 
 
