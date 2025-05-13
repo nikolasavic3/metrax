@@ -34,6 +34,7 @@ NDCGAtK = ranking_metrics.NDCGAtK
 Perplexity = nlp_metrics.Perplexity
 Precision = classification_metrics.Precision
 PrecisionAtK = ranking_metrics.PrecisionAtK
+PSNR = image_metrics.PSNR
 RMSE = regression_metrics.RMSE
 RSQUARED = regression_metrics.RSQUARED
 Recall = classification_metrics.Recall
@@ -60,6 +61,7 @@ __all__ = [
     "Perplexity",
     "Precision",
     "PrecisionAtK",
+    "PSNR",
     "RMSE",
     "RSQUARED",
     "Recall",
