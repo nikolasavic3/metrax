@@ -42,6 +42,11 @@ class TensorboardBackendTest(absltest.TestCase):
       mock_writer_instance.add_scalar.assert_called_with("event2", 2.0, 2)
       mock_writer_instance.flush.assert_called_once()
 
+      backend.log_scalar("event_no_step", 3.0)
+      mock_writer_instance.add_scalar.assert_called_with(
+          "event_no_step", 3.0, 0
+      )
+
       backend.close()
       mock_writer_instance.close.assert_called_once()
 
