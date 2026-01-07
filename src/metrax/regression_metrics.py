@@ -45,11 +45,11 @@ class MAE(base.Average):
 
   @classmethod
   def from_model_output(
-      cls,
-      predictions: jax.Array,
-      labels: jax.Array,
-      sample_weights: jax.Array | None = None,
-  ) -> 'MAE':
+    cls,
+    predictions: jax.Array,
+    labels: jax.Array,
+    sample_weights: jax.Array | None = None,
+  ) -> "MAE":
     """Updates the metric.
 
     Args:
@@ -72,8 +72,8 @@ class MAE(base.Average):
       absolute_error = absolute_error * sample_weights
       count = count * sample_weights
     return cls(
-        total=absolute_error.sum(),
-        count=count.sum(),
+      total=absolute_error.sum(),
+      count=count.sum(),
     )
 
 
@@ -101,11 +101,11 @@ class MSE(base.Average):
 
   @classmethod
   def from_model_output(
-      cls,
-      predictions: jax.Array,
-      labels: jax.Array,
-      sample_weights: jax.Array | None = None,
-  ) -> 'MSE':
+    cls,
+    predictions: jax.Array,
+    labels: jax.Array,
+    sample_weights: jax.Array | None = None,
+  ) -> "MSE":
     """Updates the metric.
 
     Args:
@@ -128,8 +128,8 @@ class MSE(base.Average):
       squared_error = squared_error * sample_weights
       count = count * sample_weights
     return cls(
-        total=squared_error.sum(),
-        count=count.sum(),
+      total=squared_error.sum(),
+      count=count.sum(),
     )
 
 
@@ -202,21 +202,21 @@ class RSQUARED(clu_metrics.Metric):
   sum_of_squared_label: jax.Array
 
   @classmethod
-  def empty(cls) -> 'RSQUARED':
+  def empty(cls) -> "RSQUARED":
     return cls(
-        total=jnp.array(0, jnp.float32),
-        count=jnp.array(0, jnp.float32),
-        sum_of_squared_error=jnp.array(0, jnp.float32),
-        sum_of_squared_label=jnp.array(0, jnp.float32),
+      total=jnp.array(0, jnp.float32),
+      count=jnp.array(0, jnp.float32),
+      sum_of_squared_error=jnp.array(0, jnp.float32),
+      sum_of_squared_label=jnp.array(0, jnp.float32),
     )
 
   @classmethod
   def from_model_output(
-      cls,
-      predictions: jax.Array,
-      labels: jax.Array,
-      sample_weights: jax.Array | None = None,
-  ) -> 'RSQUARED':
+    cls,
+    predictions: jax.Array,
+    labels: jax.Array,
+    sample_weights: jax.Array | None = None,
+  ) -> "RSQUARED":
     """Updates the metric.
 
     Args:
@@ -242,20 +242,18 @@ class RSQUARED(clu_metrics.Metric):
       squared_error = squared_error * sample_weights
       squared_label = squared_label * sample_weights
     return cls(
-        total=labels.sum(),
-        count=count.sum(),
-        sum_of_squared_error=squared_error.sum(),
-        sum_of_squared_label=squared_label.sum(),
+      total=labels.sum(),
+      count=count.sum(),
+      sum_of_squared_error=squared_error.sum(),
+      sum_of_squared_label=squared_label.sum(),
     )
 
-  def merge(self, other: 'RSQUARED') -> 'RSQUARED':
+  def merge(self, other: "RSQUARED") -> "RSQUARED":
     return type(self)(
-        total=self.total + other.total,
-        count=self.count + other.count,
-        sum_of_squared_error=self.sum_of_squared_error
-        + other.sum_of_squared_error,
-        sum_of_squared_label=self.sum_of_squared_label
-        + other.sum_of_squared_label,
+      total=self.total + other.total,
+      count=self.count + other.count,
+      sum_of_squared_error=self.sum_of_squared_error + other.sum_of_squared_error,
+      sum_of_squared_label=self.sum_of_squared_label + other.sum_of_squared_label,
     )
 
   def compute(self) -> jax.Array:
@@ -275,3 +273,73 @@ class RSQUARED(clu_metrics.Metric):
     mean = base.divide_no_nan(self.total, self.count)
     sst = self.sum_of_squared_label - self.count * jnp.power(mean, 2)
     return 1 - base.divide_no_nan(self.sum_of_squared_error, sst)
+
+
+@flax.struct.dataclass
+class SpearmanRankCorrelation(clu_metrics.Metric):
+  r"""Computes the Spearman rank correlation coefficient.
+
+  The Spearman rank correlation coefficient measures the monotonic relationship
+  between two variables. It is defined as the Pearson correlation coefficient
+  between the ranked variables.
+
+  .. math::
+      \rho = 1 - \frac{6 \sum d_i^2}{n(n^2 - 1)}
+
+  where:
+      - :math:`d_i` is the difference between the ranks of each observation
+      - :math:`n` is the number of observations
+
+  This implementation accumulates all `predictions` and `labels` to compute the
+  exact ranks upon calling `compute()`.
+
+  Attributes:
+    predictions: Accumulated predictions.
+    labels: Accumulated labels.
+  """
+
+  predictions: jax.Array
+  labels: jax.Array
+
+  @classmethod
+  def empty(cls) -> "SpearmanRankCorrelation":
+    return cls(
+      predictions=jnp.array([], jnp.float32),
+      labels=jnp.array([], jnp.float32),
+    )
+
+  @classmethod
+  def from_model_output(
+    cls,
+    predictions: jax.Array,
+    labels: jax.Array,
+    **kwargs,
+  ) -> "SpearmanRankCorrelation":
+    del kwargs
+    return cls(
+      predictions=predictions.flatten(),
+      labels=labels.flatten(),
+    )
+
+  def merge(self, other: "SpearmanRankCorrelation") -> "SpearmanRankCorrelation":
+    return type(self)(
+      predictions=jnp.concatenate([self.predictions, other.predictions]),
+      labels=jnp.concatenate([self.labels, other.labels]),
+    )
+
+  def compute(self) -> jax.Array:
+    if self.predictions.size == 0:
+      return jnp.array(jnp.nan, jnp.float32)
+
+    rank_preds = jax.scipy.stats.rankdata(self.predictions)
+    rank_labels = jax.scipy.stats.rankdata(self.labels)
+
+    def pearson_correlation(x, y):
+      mu_x = jnp.mean(x)
+      mu_y = jnp.mean(y)
+      xm, ym = x - mu_x, y - mu_y
+      r_num = jnp.sum(xm * ym)
+      r_den = jnp.sqrt(jnp.sum(xm**2) * jnp.sum(ym**2))
+      return base.divide_no_nan(r_num, r_den)
+
+    return pearson_correlation(rank_preds, rank_labels)
