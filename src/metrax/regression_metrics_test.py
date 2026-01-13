@@ -24,6 +24,7 @@ import jax.numpy as jnp
 import keras
 import metrax
 import numpy as np
+from scipy.stats import spearmanr
 from sklearn import metrics as sklearn_metrics
 
 np.random.seed(42)
@@ -273,17 +274,13 @@ class RegressionMetricsTest(parameterized.TestCase):
     )
 
   @parameterized.named_parameters(
-      ('basic_f16', OUTPUT_LABELS, OUTPUT_PREDS_F16, None),
-      ('basic_f32', OUTPUT_LABELS, OUTPUT_PREDS_F32, None),
-      ('basic_bf16', OUTPUT_LABELS, OUTPUT_PREDS_BF16, None),
-      ('batch_size_one', OUTPUT_LABELS_BS1, OUTPUT_PREDS_BS1, None),
+      ('basic_f16', OUTPUT_LABELS, OUTPUT_PREDS_F16),
+      ('basic_f32', OUTPUT_LABELS, OUTPUT_PREDS_F32),
+      ('basic_bf16', OUTPUT_LABELS, OUTPUT_PREDS_BF16),
+      ('batch_size_one', OUTPUT_LABELS_BS1, OUTPUT_PREDS_BS1),
   )
-  def test_spearman(self, y_true, y_pred, sample_weights):
+  def test_spearman(self, y_true, y_pred):
     """Test that `SpearmanRankCorrelation` Metric computes correct values."""
-    from scipy.stats import spearmanr
-
-    del sample_weights  # Spearman doesn't support sample weights in this implementation
-
     y_true = y_true.astype(y_pred.dtype)
     y_pred = y_pred.astype(y_true.dtype)
 

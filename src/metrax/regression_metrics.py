@@ -295,6 +295,9 @@ class SpearmanRankCorrelation(clu_metrics.Metric):
   This implementation accumulates all `predictions` and `labels` to compute the
   exact ranks upon calling `compute()`.
 
+  .. warning::
+      For very large datasets, this may lead to Out-of-Memory (OOM) errors.
+
   Attributes:
     predictions: Accumulated predictions.
     labels: Accumulated labels.
