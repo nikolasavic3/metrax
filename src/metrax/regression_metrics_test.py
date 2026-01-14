@@ -24,6 +24,7 @@ import jax.numpy as jnp
 import keras
 import metrax
 import numpy as np
+from scipy.stats import spearmanr
 from sklearn import metrics as sklearn_metrics
 
 np.random.seed(42)
@@ -268,6 +269,39 @@ class RegressionMetricsTest(parameterized.TestCase):
     np.testing.assert_allclose(
         metric.compute(),
         keras_r2.result(),
+        rtol=rtol,
+        atol=atol,
+    )
+
+  @parameterized.named_parameters(
+      ('basic_f16', OUTPUT_LABELS, OUTPUT_PREDS_F16),
+      ('basic_f32', OUTPUT_LABELS, OUTPUT_PREDS_F32),
+      ('basic_bf16', OUTPUT_LABELS, OUTPUT_PREDS_BF16),
+      ('batch_size_one', OUTPUT_LABELS_BS1, OUTPUT_PREDS_BS1),
+  )
+  def test_spearman(self, y_true, y_pred):
+    """Test that `SpearmanRankCorrelation` Metric computes correct values."""
+    y_true = y_true.astype(y_pred.dtype)
+    y_pred = y_pred.astype(y_true.dtype)
+
+    metric = None
+    for labels, logits in zip(y_true, y_pred):
+      update = metrax.SpearmanRankCorrelation.from_model_output(
+          predictions=logits,
+          labels=labels,
+      )
+      metric = update if metric is None else metric.merge(update)
+
+    expected, _ = spearmanr(
+        y_true.astype('float32').flatten(),
+        y_pred.astype('float32').flatten(),
+    )
+    # Use lower tolerance for lower precision dtypes.
+    rtol = 1e-2 if y_true.dtype in (jnp.float16, jnp.bfloat16) else 1e-05
+    atol = 1e-2 if y_true.dtype in (jnp.float16, jnp.bfloat16) else 1e-05
+    np.testing.assert_allclose(
+        metric.compute(),
+        expected,
         rtol=rtol,
         atol=atol,
     )

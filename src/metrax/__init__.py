@@ -45,6 +45,7 @@ RecallAtK = ranking_metrics.RecallAtK
 RougeL = nlp_metrics.RougeL
 RougeN = nlp_metrics.RougeN
 SNR = audio_metrics.SNR
+SpearmanRankCorrelation = regression_metrics.SpearmanRankCorrelation
 SSIM = image_metrics.SSIM
 WER = nlp_metrics.WER
 
@@ -70,6 +71,7 @@ __all__ = [
     "PSNR",
     "RMSE",
     "RSQUARED",
+    "SpearmanRankCorrelation",
     "Recall",
     "RecallAtK",
     "RougeL",
