@@ -52,9 +52,49 @@ SAMPLE_WEIGHTS = np.tile(
 
 class RegressionMetricsTest(parameterized.TestCase):
 
-  def test_multiple_devices(self):
-    """Test that metrax metrics work across multiple devices using R2 as an example."""
+  def test_multiple_devices_jit(self):
+    """Test that metrax metrics work across multiple devices using jit and jax.Array."""
+    # 1. Define the hardware mesh.
+    devices = jax.devices()
+    mesh = jax.sharding.Mesh(devices, ('data',))
 
+    # 2. Define the sharding strategy (shard the first dimension across 'data'
+    # axis).
+    sharding = jax.sharding.NamedSharding(
+        mesh, jax.sharding.PartitionSpec('data', None)
+    )
+
+    # 3. Shard the global data across devices.
+    y_pred = jax.device_put(OUTPUT_PREDS, sharding)
+    y_true = jax.device_put(OUTPUT_LABELS, sharding)
+
+    # 4. Use jax.jit for the computation.
+    # In SPMD mode, RSQUARED.from_model_output will perform global
+    # reductions (sums) automatically across the shards.
+    @jax.jit
+    def compute_metric(logits, labels):
+      return metrax.RSQUARED.from_model_output(logits, labels)
+
+    metric = compute_metric(y_pred, y_true)
+
+    # 5. Verify against reference (Keras reference remains the same).
+    keras_r2 = keras.metrics.R2Score()
+    for labels, logits in zip(OUTPUT_LABELS, OUTPUT_PREDS):
+      keras_r2.update_state(
+          labels[:, jnp.newaxis],
+          logits[:, jnp.newaxis],
+      )
+    expected = keras_r2.result()
+
+    np.testing.assert_allclose(
+        metric.compute(),
+        expected,
+        rtol=1e-05,
+        atol=1e-05,
+    )
+
+  def test_multiple_devices_pmap(self):
+    """Test that metrax metrics work across multiple devices using R2 as an example."""
     def create_r2(logits, labels):
       """Creates a metrax RSQUARED metric given logits and labels."""
       return metrax.RSQUARED.from_model_output(logits, labels)
@@ -72,8 +112,17 @@ class RegressionMetricsTest(parameterized.TestCase):
 
     y_pred = OUTPUT_PREDS
     y_true = OUTPUT_LABELS
-    metric = jax.jit(sharded_r2)(y_pred, y_true)
-    metric = metric.reduce()
+
+    # Calculate sharded R2 across devices.
+    metric_sharded = sharded_r2(y_pred, y_true)
+
+    # Move the metric results from devices to the host.
+    cpu_device = jax.devices('cpu')[0]
+    metric_on_host = jax.tree_util.tree_map(
+        lambda x: jax.device_put(x, cpu_device),
+        metric_sharded,
+    )
+    metric = metric_on_host.reduce()
 
     keras_r2 = keras.metrics.R2Score()
     for labels, logits in zip(y_true, y_pred):
