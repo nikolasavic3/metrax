@@ -191,6 +191,13 @@ class SNR(NnxWrapper):
     super().__init__(metrax.SNR)
 
 
+class SpearmanRankCorrelation(NnxWrapper):
+  """An NNX class for the Metrax metric SpearmanRankCorrelation."""
+
+  def __init__(self):
+    super().__init__(metrax.SpearmanRankCorrelation)
+
+
 class SSIM(NnxWrapper):
   """An NNX class for the Metrax metric SSIM."""
 
