@@ -39,7 +39,6 @@ RecallAtK = nnx_metrics.RecallAtK
 RougeL = nnx_metrics.RougeL
 RougeN = nnx_metrics.RougeN
 SNR = nnx_metrics.SNR
-SpearmanRankCorrelation = nnx_metrics.SpearmanRankCorrelation
 SSIM = nnx_metrics.SSIM
 WER = nnx_metrics.WER
 
@@ -69,7 +68,6 @@ __all__ = [
     "RougeL",
     "RougeN",
     "SNR",
-    "SpearmanRankCorrelation",
     "SSIM",
     "WER",
 ]
