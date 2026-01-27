@@ -291,6 +291,86 @@ class RegressionMetricsTest(parameterized.TestCase):
       ('weighted_f32', OUTPUT_LABELS, OUTPUT_PREDS_F32, SAMPLE_WEIGHTS),
       ('weighted_bf16', OUTPUT_LABELS, OUTPUT_PREDS_BF16, SAMPLE_WEIGHTS),
   )
+  def test_msle(self, y_true, y_pred, sample_weights):
+    """Test that `MSLE` Metric computes correct values."""
+    y_true = y_true.astype(y_pred.dtype)
+    y_pred = y_pred.astype(y_true.dtype)
+    if sample_weights is None:
+      sample_weights = np.ones_like(y_true)
+
+    metric = None
+    for labels, logits, weights in zip(y_true, y_pred, sample_weights):
+      update = metrax.MSLE.from_model_output(
+          predictions=logits,
+          labels=labels,
+          sample_weights=weights,
+      )
+      metric = update if metric is None else metric.merge(update)
+
+    expected = sklearn_metrics.mean_squared_log_error(
+        y_true.astype('float32').flatten(),
+        y_pred.astype('float32').flatten(),
+        sample_weight=sample_weights.astype('float32').flatten(),
+    )
+    # Use lower tolerance for lower precision dtypes.
+    rtol = 1e-2 if y_true.dtype in (jnp.float16, jnp.bfloat16) else 1e-05
+    atol = 1e-2 if y_true.dtype in (jnp.float16, jnp.bfloat16) else 1e-05
+    np.testing.assert_allclose(
+        metric.compute(),
+        expected,
+        rtol=rtol,
+        atol=atol,
+    )
+
+  @parameterized.named_parameters(
+      ('basic_f16', OUTPUT_LABELS, OUTPUT_PREDS_F16, None),
+      ('basic_f32', OUTPUT_LABELS, OUTPUT_PREDS_F32, None),
+      ('basic_bf16', OUTPUT_LABELS, OUTPUT_PREDS_BF16, None),
+      ('batch_size_one', OUTPUT_LABELS_BS1, OUTPUT_PREDS_BS1, None),
+      ('weighted_f16', OUTPUT_LABELS, OUTPUT_PREDS_F16, SAMPLE_WEIGHTS),
+      ('weighted_f32', OUTPUT_LABELS, OUTPUT_PREDS_F32, SAMPLE_WEIGHTS),
+      ('weighted_bf16', OUTPUT_LABELS, OUTPUT_PREDS_BF16, SAMPLE_WEIGHTS),
+  )
+  def test_rmsle(self, y_true, y_pred, sample_weights):
+    """Test that `RMSLE` Metric computes correct values."""
+    y_true = y_true.astype(y_pred.dtype)
+    y_pred = y_pred.astype(y_true.dtype)
+    if sample_weights is None:
+      sample_weights = np.ones_like(y_true)
+
+    metric = None
+    for labels, logits, weights in zip(y_true, y_pred, sample_weights):
+      update = metrax.RMSLE.from_model_output(
+          predictions=logits,
+          labels=labels,
+          sample_weights=weights,
+      )
+      metric = update if metric is None else metric.merge(update)
+
+    expected = sklearn_metrics.root_mean_squared_log_error(
+        y_true.astype('float32').flatten(),
+        y_pred.astype('float32').flatten(),
+        sample_weight=sample_weights.astype('float32').flatten(),
+    )
+    # Use lower tolerance for lower precision dtypes.
+    rtol = 1e-2 if y_true.dtype in (jnp.float16, jnp.bfloat16) else 1e-05
+    atol = 1e-2 if y_true.dtype in (jnp.float16, jnp.bfloat16) else 1e-05
+    np.testing.assert_allclose(
+        metric.compute(),
+        expected,
+        rtol=rtol,
+        atol=atol,
+    )
+
+  @parameterized.named_parameters(
+      ('basic_f16', OUTPUT_LABELS, OUTPUT_PREDS_F16, None),
+      ('basic_f32', OUTPUT_LABELS, OUTPUT_PREDS_F32, None),
+      ('basic_bf16', OUTPUT_LABELS, OUTPUT_PREDS_BF16, None),
+      ('batch_size_one', OUTPUT_LABELS_BS1, OUTPUT_PREDS_BS1, None),
+      ('weighted_f16', OUTPUT_LABELS, OUTPUT_PREDS_F16, SAMPLE_WEIGHTS),
+      ('weighted_f32', OUTPUT_LABELS, OUTPUT_PREDS_F32, SAMPLE_WEIGHTS),
+      ('weighted_bf16', OUTPUT_LABELS, OUTPUT_PREDS_BF16, SAMPLE_WEIGHTS),
+  )
   def test_rsquared(self, y_true, y_pred, sample_weights):
     """Test that `RSQUARED` Metric computes correct values."""
     y_true = y_true.astype(y_pred.dtype)
