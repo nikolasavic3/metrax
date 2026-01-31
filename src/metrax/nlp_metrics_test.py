@@ -23,12 +23,14 @@ import jax.numpy as jnp
 import keras_hub
 import metrax
 import numpy as np
+import sys
+import pytest
 
 np.random.seed(42)
 
 
+@pytest.mark.skipif(sys.version_info >= (3, 13), reason="keras_hub not available for Python 3.13+")
 class NlpMetricsTest(parameterized.TestCase):
-
   def test_bleu_empty(self):
     """Tests the `empty` method of the `BLEU` class."""
     m = metrax.BLEU.empty()
