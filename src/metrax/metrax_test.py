@@ -93,6 +93,14 @@ class MetraxTest(parameterized.TestCase):
           },
       ),
       (
+          'cosinesimilarity',
+          metrax.CosineSimilarity,
+          {
+              'predictions': OUTPUT_LABELS,
+              'targets': OUTPUT_PREDS,
+          },
+      ),
+      (
           'dcgAtK',
           metrax.DCGAtK,
           {
@@ -141,6 +149,12 @@ class MetraxTest(parameterized.TestCase):
           {'predictions': OUTPUT_LABELS, 'labels': OUTPUT_PREDS},
       ),
       (
+          'msle',
+          metrax.MSLE,
+          {'predictions': OUTPUT_LABELS, 'labels': OUTPUT_PREDS},
+      ),
+
+      (
           'ndcgAtK',
           metrax.NDCGAtK,
           {
@@ -180,6 +194,11 @@ class MetraxTest(parameterized.TestCase):
       (
           'rmse',
           metrax.RMSE,
+          {'predictions': OUTPUT_LABELS, 'labels': OUTPUT_PREDS},
+      ),
+      (
+          'rmsle',
+          metrax.RMSLE,
           {'predictions': OUTPUT_LABELS, 'labels': OUTPUT_PREDS},
       ),
       (

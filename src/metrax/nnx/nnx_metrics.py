@@ -60,6 +60,13 @@ class BLEU(NnxWrapper):
     super().__init__(metrax.BLEU)
 
 
+class CosineSimilarity(NnxWrapper):
+  """An NNX class for the Metrax metric CosineSimilarity."""
+
+  def __init__(self):
+    super().__init__(metrax.CosineSimilarity)
+
+
 class DCGAtK(NnxWrapper):
   """An NNX class for the Metrax metric DCGAtK."""
 
@@ -105,6 +112,13 @@ class MSE(NnxWrapper):
 
   def __init__(self):
     super().__init__(metrax.MSE)
+
+
+class MSLE(NnxWrapper):
+  """An NNX class for the Metrax metric MSLE."""
+
+  def __init__(self):
+    super().__init__(metrax.MSLE)
 
 
 class NDCGAtK(NnxWrapper):
@@ -161,6 +175,13 @@ class RMSE(NnxWrapper):
 
   def __init__(self):
     super().__init__(metrax.RMSE)
+
+
+class RMSLE(NnxWrapper):
+  """An NNX class for the Metrax metric RMSLE."""
+
+  def __init__(self):
+    super().__init__(metrax.RMSLE)
 
 
 class RougeL(NnxWrapper):

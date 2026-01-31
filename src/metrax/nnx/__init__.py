@@ -20,6 +20,7 @@ Accuracy = nnx_metrics.Accuracy
 Average = nnx_metrics.Average
 AveragePrecisionAtK = nnx_metrics.AveragePrecisionAtK
 BLEU = nnx_metrics.BLEU
+CosineSimilarity = nnx_metrics.CosineSimilarity
 DCGAtK = nnx_metrics.DCGAtK
 Dice = nnx_metrics.Dice
 FBetaScore = nnx_metrics.FBetaScore
@@ -27,12 +28,14 @@ IoU = nnx_metrics.IoU
 MAE = nnx_metrics.MAE
 MRR = nnx_metrics.MRR
 MSE = nnx_metrics.MSE
+MSLE = nnx_metrics.MSLE
 NDCGAtK = nnx_metrics.NDCGAtK
 Perplexity = nnx_metrics.Perplexity
 Precision = nnx_metrics.Precision
 PrecisionAtK = nnx_metrics.PrecisionAtK
 PSNR = nnx_metrics.PSNR
 RMSE = nnx_metrics.RMSE
+RMSLE = nnx_metrics.RMSLE
 RSQUARED = nnx_metrics.RSQUARED
 Recall = nnx_metrics.Recall
 RecallAtK = nnx_metrics.RecallAtK
@@ -50,6 +53,7 @@ __all__ = [
     "Average",
     "AveragePrecisionAtK",
     "BLEU",
+    "CosineSimilarity",
     "DCGAtK",
     "Dice",
     "FBetaScore",

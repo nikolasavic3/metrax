@@ -26,6 +26,7 @@ Accuracy = classification_metrics.Accuracy
 Average = base.Average
 AveragePrecisionAtK = ranking_metrics.AveragePrecisionAtK
 BLEU = nlp_metrics.BLEU
+CosineSimilarity = image_metrics.CosineSimilarity
 DCGAtK = ranking_metrics.DCGAtK
 Dice = image_metrics.Dice
 FBetaScore = classification_metrics.FBetaScore
@@ -33,12 +34,14 @@ IoU = image_metrics.IoU
 MAE = regression_metrics.MAE
 MRR = ranking_metrics.MRR
 MSE = regression_metrics.MSE
+MSLE = regression_metrics.MSLE
 NDCGAtK = ranking_metrics.NDCGAtK
 Perplexity = nlp_metrics.Perplexity
 Precision = classification_metrics.Precision
 PrecisionAtK = ranking_metrics.PrecisionAtK
 PSNR = image_metrics.PSNR
 RMSE = regression_metrics.RMSE
+RMSLE = regression_metrics.RMSLE
 RSQUARED = regression_metrics.RSQUARED
 Recall = classification_metrics.Recall
 RecallAtK = ranking_metrics.RecallAtK
@@ -57,6 +60,7 @@ __all__ = [
     "Average",
     "AveragePrecisionAtK",
     "BLEU",
+    "CosineSimilarity",
     "DCGAtK",
     "Dice",
     "FBetaScore",
@@ -64,12 +68,14 @@ __all__ = [
     "MAE",
     "MRR",
     "MSE",
+    "MSLE",
     "NDCGAtK",
     "Perplexity",
     "Precision",
     "PrecisionAtK",
     "PSNR",
     "RMSE",
+    "RMSLE",
     "RSQUARED",
     "SpearmanRankCorrelation",
     "Recall",
