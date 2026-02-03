@@ -539,14 +539,15 @@ class PSNR(base.Average):
     """Computes PSNR (Peak Signal-to-Noise Ratio) values.
 
     Args:
-            img1: Predicted images, shape ``(batch, H, W, C)``.
-            img2: Ground‑truth images, same shape as ``img1``.
-            max_val: Dynamic range of the images (e.g. ``1.0`` or ``255``).
-            eps: Small constant to avoid ``log(0)`` when images are identical.
+      img1: Predicted images, shape ``(batch, H, W, C)``.
+      img2: Ground‑truth images, same shape as ``img1``.
+      max_val: Dynamic range of the images (e.g. ``1.0`` or ``255``).
+      eps: Small constant to avoid ``log(0)`` when images are identical.
 
-        Returns:
-          A 1D JAX array of shape ``(batch,)`` containing PSNR in dB.
+    Returns:
+      A 1D JAX array of shape ``(batch,)`` containing PSNR in dB.
     """
+
     if img1.shape != img2.shape:
       raise ValueError(
           f'Input images must have the same shape, got {img1.shape} and'
@@ -663,9 +664,9 @@ class Dice(clu_metrics.Metric):
     )
 
   def compute(self) -> jax.Array:
-    """Returns the final Dice coefficient."""
-    epsilon = 1e-7
-    return (2.0 * self.intersection) / (self.sum_pred + self.sum_true + epsilon)
+    return base.divide_no_nan(
+        2.0 * self.intersection, self.sum_pred + self.sum_true
+    )
 
 
 @flax.struct.dataclass
@@ -705,4 +706,3 @@ class CosineSimilarity(base.Average):
     cosine_similarity = dot_product / (predictions_norm * targets_norm)
 
     return super().from_model_output(values=cosine_similarity)
-

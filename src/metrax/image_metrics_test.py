@@ -15,9 +15,10 @@
 """Tests for metrax image metrics."""
 
 import os
-os.environ['KERAS_BACKEND'] = 'jax'
 
-from absl.testing import absltest
+os.environ['KERAS_BACKEND'] = 'jax'  # pylint: disable=g-import-not-at-top
+
+from absl.testing import absltest  # pylint: disable=g-import-not-at-top
 from absl.testing import parameterized
 import jax.numpy as jnp
 import keras
@@ -77,7 +78,8 @@ MAX_VAL_6 = 1.0
 
 B_IOU, H_IOU, W_IOU = 2, 4, 4  # Common batch, height, width for IoU tests
 
-# Case IoU 1: Binary segmentation (num_classes=2), target_class_ids=[1] (foreground)
+# Case IoU 1: Binary segmentation (num_classes=2), target_class_ids=[1]
+# (foreground)
 # Targets: (Batch, Height, Width)
 TARGETS_IOU_1 = np.array(
     [
@@ -118,7 +120,8 @@ TARGET_CLASS_IDS_IOU_1 = np.array(
     [1]
 )  # Expected Keras/Metrax result: mean([2/6, 2/6]) = 1/3
 
-# Case IoU 2: Multi-class (num_classes=3), target_class_ids=[0, 2] (mean over these two)
+# Case IoU 2: Multi-class (num_classes=3), target_class_ids=[0, 2]
+# (mean over these two)
 TARGETS_IOU_2 = np.array(
     [
         [[0, 0, 1, 1], [0, 1, 1, 2], [2, 2, 1, 0], [0, 0, 2, 2]],  # B1
@@ -136,7 +139,8 @@ PREDS_IOU_2 = np.array(
 NUM_CLASSES_IOU_2 = 3
 TARGET_CLASS_IDS_IOU_2 = np.array([0, 2])
 
-# Case IoU 3: Perfect overlap for target class [1] (using a smaller H, W for simplicity)
+# Case IoU 3: Perfect overlap for target class [1]
+# (using a smaller H, W for simplicity)
 _H_IOU3, _W_IOU3 = 3, 3
 TARGETS_IOU_3 = np.array(
     [
@@ -541,11 +545,12 @@ class ImageMetricsTest(parameterized.TestCase):
     y_pred = jnp.asarray(y_pred, jnp.float32)
 
     # Manually compute expected Dice
-    eps = 1e-7
     intersection = jnp.sum(y_true * y_pred)
     sum_pred = jnp.sum(y_pred)
     sum_true = jnp.sum(y_true)
-    expected = (2.0 * intersection) / (sum_pred + sum_true + eps)
+    expected = metrax.base.divide_no_nan(
+        2.0 * intersection, sum_pred + sum_true
+    )
 
     # Compute using the metric class
     metric = metrax.Dice.from_model_output(predictions=y_pred, labels=y_true)

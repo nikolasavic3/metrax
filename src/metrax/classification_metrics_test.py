@@ -15,9 +15,10 @@
 """Tests for metrax classification metrics."""
 
 import os
-os.environ['KERAS_BACKEND'] = 'jax'
 
-from absl.testing import absltest
+os.environ['KERAS_BACKEND'] = 'jax'  # pylint: disable=g-import-not-at-top
+
+from absl.testing import absltest  # pylint: disable=g-import-not-at-top
 from absl.testing import parameterized
 import jax.numpy as jnp
 import keras
@@ -46,6 +47,7 @@ SAMPLE_WEIGHTS = np.tile(
     [0.5, 1, 0, 0, 0, 0, 0, 0],
     (BATCHES, 1),
 ).astype(np.float32)
+
 
 class ClassificationMetricsTest(parameterized.TestCase):
 
@@ -273,17 +275,53 @@ class ClassificationMetricsTest(parameterized.TestCase):
         atol=1e-2 if y_true.dtype in (jnp.float16, jnp.bfloat16) else 1e-7,
     )
 
-# Testing function for F-Beta classification
+  # Testing function for F-Beta classification
   # name, output true, output prediction, threshold, beta
   @parameterized.named_parameters(
       ('basic_f16_beta_1.0', OUTPUT_LABELS, OUTPUT_PREDS_F16, 0.5, 1.0),
       ('basic_f32_beta_1.0', OUTPUT_LABELS, OUTPUT_PREDS_F32, 0.5, 1.0),
-      ('low_threshold_f32_beta_1.0', OUTPUT_LABELS, OUTPUT_PREDS_F32, 0.1, 1.0),
-      ('high_threshold_bf16_beta_1.0', OUTPUT_LABELS, OUTPUT_PREDS_BF16, 0.7, 1.0),
-      ('batch_size_one_beta_1.0', OUTPUT_LABELS_BS1, OUTPUT_PREDS_BS1, 0.5, 1.0),
-      ('high_threshold_f16_beta_2.0', OUTPUT_LABELS, OUTPUT_PREDS_F16, 0.7, 2.0),
-      ('high_threshold_f32_beta_2.0', OUTPUT_LABELS, OUTPUT_PREDS_F32, 0.7, 2.0),
-      ('low_threshold_bf16_beta_2.0', OUTPUT_LABELS, OUTPUT_PREDS_BF16, 0.1, 2.0),
+      (
+          'low_threshold_f32_beta_1.0',
+          OUTPUT_LABELS,
+          OUTPUT_PREDS_F32,
+          0.1,
+          1.0,
+      ),
+      (
+          'high_threshold_bf16_beta_1.0',
+          OUTPUT_LABELS,
+          OUTPUT_PREDS_BF16,
+          0.7,
+          1.0,
+      ),
+      (
+          'batch_size_one_beta_1.0',
+          OUTPUT_LABELS_BS1,
+          OUTPUT_PREDS_BS1,
+          0.5,
+          1.0,
+      ),
+      (
+          'high_threshold_f16_beta_2.0',
+          OUTPUT_LABELS,
+          OUTPUT_PREDS_F16,
+          0.7,
+          2.0,
+      ),
+      (
+          'high_threshold_f32_beta_2.0',
+          OUTPUT_LABELS,
+          OUTPUT_PREDS_F32,
+          0.7,
+          2.0,
+      ),
+      (
+          'low_threshold_bf16_beta_2.0',
+          OUTPUT_LABELS,
+          OUTPUT_PREDS_BF16,
+          0.1,
+          2.0,
+      ),
       ('low_threshold_f16_beta_3.0', OUTPUT_LABELS, OUTPUT_PREDS_F16, 0.1, 3.0),
       ('basic_bf16_beta_3.0', OUTPUT_LABELS, OUTPUT_PREDS_BF16, 0.5, 3.0),
   )
@@ -306,6 +344,26 @@ class ClassificationMetricsTest(parameterized.TestCase):
         rtol=rtol,
         atol=atol,
     )
+
+  def test_fbeta_default_init(self):
+    """Test usage of FBetaScore with default beta (should be 1.0)."""
+    y_true = jnp.array([1, 0, 1, 0], dtype=jnp.float32)
+    y_pred = jnp.array([1, 0, 0, 1], dtype=jnp.float32)
+
+    # Init without beta argument
+    metric = metrax.FBetaScore.from_model_output(
+        predictions=y_pred,
+        labels=y_true,
+    )
+
+    # Should default to beta=1.0 (F1 Score)
+    self.assertEqual(metric.beta, 1.0)
+
+    # Calculate expected F1
+    # TP=1 (idx 0), FP=1 (idx 3), FN=1 (idx 2)
+    # Precision = 1/2, Recall = 1/2
+    # F1 = 2 * (0.5 * 0.5) / (0.5 + 0.5) = 0.5
+    self.assertAlmostEqual(metric.compute(), 0.5)
 
 
 if __name__ == '__main__':
